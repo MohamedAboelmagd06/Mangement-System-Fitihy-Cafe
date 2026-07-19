@@ -1,20 +1,25 @@
-# Use Node 18 (matches your package.json engines)
-FROM node:18-alpine
+# ---------- Stage 1: Dependencies ----------
+FROM node:18-alpine AS deps
 
-# Create app directory
 WORKDIR /app
 
-# Copy package.json and package-lock.json
 COPY package*.json ./
+RUN npm ci --omit=dev
 
-# Install dependencies
-RUN npm install --production
+# ---------- Stage 2: Production ----------
+FROM node:18-alpine AS production
 
-# Copy the rest of your code
+ENV NODE_ENV=production
+
+WORKDIR /app
+
+COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Expose your server port (change if your app uses another)
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup && \
+    chown -R appuser:appgroup /app
+USER appuser
+
 EXPOSE 5000
 
-# Start your app
 CMD ["node", "server.js"]
