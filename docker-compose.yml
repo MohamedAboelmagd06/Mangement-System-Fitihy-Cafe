@@ -8,11 +8,9 @@ services:
     env_file:
       - config.env
     environment:
-      DB_URL: mongodb://mongo:27017/fitihy_cafe
+      DB_URL: mongodb://${MONGO_ROOT_USER}:${MONGO_ROOT_PASSWORD}@mongo:27017/fitihy_cafe?authSource=admin
     depends_on:
       - mongo
-      - redis
-      - rabbitmq
     networks:
       - fitihy-network
 
@@ -21,7 +19,10 @@ services:
     container_name: fitihy-cafe-mongo
     restart: unless-stopped
     ports:
-      - "27017:27017"
+      - "127.0.0.1:27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
     volumes:
       - mongo-data:/data/db
     networks:
@@ -32,55 +33,15 @@ services:
     container_name: fitihy-cafe-mongo-express
     restart: unless-stopped
     ports:
-      - "8081:8081"
+      - "127.0.0.1:8081:8081"
     environment:
       ME_CONFIG_MONGODB_SERVER: mongo
-      ME_CONFIG_BASICAUTH_USERNAME: admin
-      ME_CONFIG_BASICAUTH_PASSWORD: admin123
+      ME_CONFIG_MONGODB_ADMINUSERNAME: ${MONGO_ROOT_USER}
+      ME_CONFIG_MONGODB_ADMINPASSWORD: ${MONGO_ROOT_PASSWORD}
+      ME_CONFIG_BASICAUTH_USERNAME: ${ME_CONFIG_BASICAUTH_USERNAME}
+      ME_CONFIG_BASICAUTH_PASSWORD: ${ME_CONFIG_BASICAUTH_PASSWORD}
     depends_on:
       - mongo
-    networks:
-      - fitihy-network
-
-  redis:
-    image: redis:7-alpine
-    container_name: fitihy-cafe-redis
-    restart: unless-stopped
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis-data:/data
-    networks:
-      - fitihy-network
-
-  rabbitmq:
-    image: rabbitmq:3-management-alpine
-    container_name: fitihy-cafe-rabbitmq
-    restart: unless-stopped
-    ports:
-      - "5672:5672"
-      - "15672:15672"
-    environment:
-      RABBITMQ_DEFAULT_USER: admin
-      RABBITMQ_DEFAULT_PASS: admin123
-    volumes:
-      - rabbitmq-data:/var/lib/rabbitmq
-    networks:
-      - fitihy-network
-
-  minio:
-    image: minio/minio:latest
-    container_name: fitihy-cafe-minio
-    restart: unless-stopped
-    ports:
-      - "9000:9000"
-      - "9001:9001"
-    environment:
-      MINIO_ROOT_USER: admin
-      MINIO_ROOT_PASSWORD: admin123
-    volumes:
-      - minio-data:/data
-    command: server /data --console-address ":9001"
     networks:
       - fitihy-network
 
@@ -90,7 +51,3 @@ networks:
 
 volumes:
   mongo-data:
-  redis-data:
-  rabbitmq-data:
-  minio-data:
-
